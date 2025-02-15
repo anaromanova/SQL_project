@@ -163,4 +163,3 @@ class DBManager:
 
         conn.close()
         return result
-
