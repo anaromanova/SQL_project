@@ -5,14 +5,18 @@ from psycopg2 import sql
 
 
 def create_database(database_name: str, params: dict) -> None:
-    """Создание базы данных и таблиц для сохранения данных о вакансиях и компаниях."""
+    """Создание базы данных и таблиц для сохранения
+     данных о вакансиях и компаниях."""
 
     conn = psycopg2.connect(dbname='postgres', **params)
     conn.autocommit = True
     cur = conn.cursor()
 
-    cur.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(database_name)))
-    cur.execute(sql.SQL("CREATE DATABASE {} ENCODING 'UTF8'").format(sql.Identifier(database_name)))
+    cur.execute(sql.SQL("DROP DATABASE IF EXISTS {}").
+                format(sql.Identifier(database_name)))
+
+    cur.execute(sql.SQL("CREATE DATABASE {} ENCODING 'UTF8'").
+                format(sql.Identifier(database_name)))
 
     conn.close()
 
@@ -40,7 +44,10 @@ def create_database(database_name: str, params: dict) -> None:
     conn.commit()
     conn.close()
 
-def save_data_to_database(vacancies: list[dict[str, Any]], companies: list[dict[str, Any]], database_name: str, params: dict) -> None:
+
+def save_data_to_database(vacancies: list[dict[str, Any]],
+                          companies: list[dict[str, Any]],
+                          database_name: str, params: dict) -> None:
     """Сохранение данных о вакансиях и компаниях в базу данных."""
 
     conn = psycopg2.connect(dbname=database_name, **params)
@@ -59,12 +66,13 @@ def save_data_to_database(vacancies: list[dict[str, Any]], companies: list[dict[
         for vacancy in vacancies:
             cur.execute(
                 """
-                INSERT INTO vacancies (vacancy_id, company_id, title, salary, vacancy_url)
+                INSERT INTO vacancies (vacancy_id, company_id,
+                                       title, salary, vacancy_url)
                 VALUES (%s, %s, %s, %s, %s)
                 """,
-                (vacancy['vacancy_id'], vacancy['company_id'], vacancy['title'],
-                 vacancy['salary'], vacancy['vacancy_url'])
-            )
+                (vacancy['vacancy_id'], vacancy['company_id'],
+                 vacancy['title'], vacancy['salary'], vacancy['vacancy_url'])
+                      )
 
     conn.commit()
     conn.close()
@@ -95,13 +103,17 @@ class DBManager:
         return result
 
     def get_all_vacancies(self) -> List:
-        """Возвращает список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию."""
+        """Возвращает список всех вакансий с указанием названия компании,
+         названия вакансии и зарплаты и ссылки на вакансию."""
         conn = psycopg2.connect(dbname=self.database_name, **self.params)
 
         with conn.cursor() as cur:
             cur.execute(
                 """
-                select v.title company, c.title vacancy, c.salary, c.vacancy_url  
+                select v.title company,
+                c.title vacancy,
+                c.salary,
+                c.vacancy_url
                 from vacancies c
                 left join companies v on c.company_id=v.company_id
                 """
@@ -128,13 +140,17 @@ class DBManager:
         return result
 
     def get_vacancies_with_higher_salary(self) -> List:
-        """Возвращает список всех вакансий, у которых зарплата выше средней по всем вакансиям."""
+        """Возвращает список всех вакансий,
+         у которых зарплата выше средней по всем вакансиям."""
         conn = psycopg2.connect(dbname=self.database_name, **self.params)
 
         with conn.cursor() as cur:
             cur.execute(
                 """
-                select v.title company, c.title vacancy, c.salary, c.vacancy_url  
+                select v.title company,
+                c.title vacancy,
+                c.salary,
+                c.vacancy_url
                 from vacancies c
                 left join companies v on c.company_id=v.company_id
                 where c.salary > (select avg(c.salary)
@@ -146,18 +162,22 @@ class DBManager:
         conn.close()
         return result
 
-    def get_vacancies_with_keyword(self) -> List:
-        """Возвращает список всех вакансий, в названии которых содержатся переданные в метод слова, например python."""
+    def get_vacancies_with_keyword(self, keyword: str) -> List:
+        """Возвращает список всех вакансий, в названии которых
+         содержатся переданные в метод слова, например python."""
         conn = psycopg2.connect(dbname=self.database_name, **self.params)
 
         with conn.cursor() as cur:
             cur.execute(
                 """
-                select v.title company, c.title vacancy, c.salary, c.vacancy_url  
+                select v.title company,
+                c.title vacancy,
+                c.salary,
+                c.vacancy_url
                 from vacancies c
                 left join companies v on c.company_id=v.company_id
-                where c.title ilike '%python%'
-                """
+                where c.title ilike %s
+                """, (keyword,)
             )
             result = cur.fetchall()
 

@@ -12,7 +12,8 @@ class HeadHunterAPI:
         """Инициализация"""
         self.url = 'https://api.hh.ru/vacancies'
         self.headers = {'User-Agent': 'HH-User-Agent'}
-        self.employers = [2180, 673, 84585, 3529, 1740, 15478, 588914, 49357, 9352463, 3776]  # ID компаний
+        self.employers = [2180, 673, 84585, 3529, 1740,
+                          15478, 588914, 49357, 9352463, 3776]  # ID компаний
         self.vacancies = []
         self.companies = []
 
@@ -29,27 +30,32 @@ class HeadHunterAPI:
             }
 
             try:
-                response = requests.get(self.url, headers=self.headers, params=params)
+                response = requests.get(self.url,
+                                        headers=self.headers, params=params)
+                # Бросает исключение, если статус-код не 200-299
+                response.raise_for_status()
             except requests.exceptions.RequestException as e:
                 print(f"Произошла ошибка {e}")
             else:
-                vacancies = response.json().get("items", [])
-                if not vacancies:  # Если нет вакансий, выходим из цикла
-                    break
+                if response.status_code == 200:
+                    vacancies = response.json().get("items", [])
+                    if not vacancies:  # Если нет вакансий, выходим из цикла
+                        break
 
-                for vacancy in vacancies:
-                    self.vacancies.append({
-                        "vacancy_id": vacancy["id"],
-                        "company_id": vacancy["employer"]["id"],
-                        "title": vacancy["name"],
-                        "salary": self.format_salary(vacancy["salary"]),
-                        "vacancy_url": vacancy["alternate_url"]  # Обрабатываем зарплату
-                    })
+                    for vacancy in vacancies:
+                        self.vacancies.append({
+                            "vacancy_id": vacancy["id"],
+                            "company_id": vacancy["employer"]["id"],
+                            "title": vacancy["name"],
+                            "salary": self.format_salary(vacancy["salary"]),
+                            "vacancy_url": vacancy["alternate_url"]
+                        })
 
-                company_info = {"company_id": vacancies[0]["employer"]["id"],
-                                "title": vacancies[0]["employer"]["name"]}
-                if company_info not in self.companies:
-                    self.companies.append(company_info)
+                    company_info = \
+                        {"company_id": vacancies[0]["employer"]["id"],
+                         "title": vacancies[0]["employer"]["name"]}
+                    if company_info not in self.companies:
+                        self.companies.append(company_info)
 
     def format_salary(self, salary: dict) -> float | None:
         """Форматирование зарплаты (если её нет, возвращаем None)"""
